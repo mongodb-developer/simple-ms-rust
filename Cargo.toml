@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.57"
 axum = "0.5.17"
+dotenv = "0.15.0"
 tokio = { version = "1.21.2", features = ["full"] }
 uuid = { version = "1.2.1", features = ["v4"] }
 
