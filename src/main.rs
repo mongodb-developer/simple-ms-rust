@@ -9,13 +9,13 @@ use axum::{
     Router, Server,
 };
 use dotenv::dotenv;
-use log::{debug, error, info};
 use std::env;
+use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() {
     // Init Logging
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     // Load environment configuration from .env
     dotenv().expect("Set your configuration in a .env file");
@@ -47,6 +47,7 @@ async fn signal_shutdown() {
     println!("signal shutdown");
 }
 
+#[tracing::instrument]
 async fn fallback_handler(uri: Uri) -> impl IntoResponse {
     error!("No route for {}", uri);
     (StatusCode::NOT_FOUND, format!("No route for {}", uri))
