@@ -28,6 +28,7 @@ async fn main() {
         .expect("Define SERVER=host:port in your .env");
     let app = Router::new()
         .route("/", get(hello))
+        .route("/health", get(health))
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -48,6 +49,10 @@ async fn main() {
 
 async fn hello() -> &'static str {
     "SuperMicroService"
+}
+
+async fn health() -> StatusCode {
+    StatusCode::OK
 }
 
 async fn signal_shutdown() {
