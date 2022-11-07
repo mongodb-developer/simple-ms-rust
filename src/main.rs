@@ -2,15 +2,18 @@ mod in_mem_order_store;
 mod order_store;
 
 use axum::{
+    error_handling::HandleErrorLayer,
     handler::Handler,
     http::{StatusCode, Uri},
     response::IntoResponse,
     routing::get,
-    Router, Server,
+    BoxError, Router, Server,
 };
 use dotenv::dotenv;
-use std::env;
-use tracing::{debug, error, info};
+use std::{env, time::Duration};
+use tower::{timeout::TimeoutLayer, ServiceBuilder};
+use tower_http::trace::TraceLayer;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
@@ -25,6 +28,14 @@ async fn main() {
         .expect("Define SERVER=host:port in your .env");
     let app = Router::new()
         .route("/", get(hello))
+        .layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                .layer(HandleErrorLayer::new(|_: BoxError| async {
+                    StatusCode::REQUEST_TIMEOUT
+                }))
+                .layer(TimeoutLayer::new(Duration::from_secs(5))),
+        )
         .fallback(fallback_handler.into_service());
 
     info!("Launching server: http://{server_addr}/");
@@ -36,7 +47,6 @@ async fn main() {
 }
 
 async fn hello() -> &'static str {
-    debug!("Static reply");
     "SuperMicroService"
 }
 
