@@ -1,6 +1,8 @@
+mod api;
 mod in_mem_order_store;
 mod order_store;
 
+use api::health;
 use axum::{
     error_handling::HandleErrorLayer,
     extract::Path,
@@ -29,7 +31,7 @@ async fn main() {
         .parse()
         .expect("Define SERVER=host:port in your .env");
     let app = Router::new()
-        .route("/health", get(health))
+        .route("/health", get(health::get))
         .route("/orders", get(list_orders).post(create_order))
         .route("/orders/:id", get(get_order))
         .route("/orders/:id/items", post(add_item_to_order))
@@ -50,10 +52,6 @@ async fn main() {
         .with_graceful_shutdown(signal_shutdown())
         .await
         .unwrap();
-}
-
-async fn health() -> StatusCode {
-    StatusCode::OK
 }
 
 async fn create_order() -> StatusCode {
