@@ -1,24 +1,28 @@
-use axum::{extract::Path, http::StatusCode};
+use super::{request::AddItem, response::Order};
+use axum::{extract::Path, http::StatusCode, Json};
 use tracing::debug;
 use uuid::Uuid;
 
-pub async fn create() -> StatusCode {
+pub async fn create() -> (StatusCode, Json<Option<Order>>) {
     debug!("Creating order");
-    StatusCode::FORBIDDEN
+    (StatusCode::FORBIDDEN, Json(None))
 }
 
-pub async fn list() -> StatusCode {
+pub async fn list() -> (StatusCode, Json<Option<Vec<Order>>>) {
     debug!("Listing orders");
-    StatusCode::FORBIDDEN
+    (StatusCode::FORBIDDEN, Json(None))
 }
 
-pub async fn get(Path(id): Path<Uuid>) -> StatusCode {
+pub async fn get(Path(id): Path<Uuid>) -> (StatusCode, Json<Option<Order>>) {
     debug!("Get order id: {id}");
-    StatusCode::FORBIDDEN
+    (StatusCode::FORBIDDEN, Json(None))
 }
 
-pub async fn add_item(Path(id): Path<Uuid>) -> StatusCode {
-    debug!("Add item to order id: {id}");
+pub async fn add_item(Path(id): Path<Uuid>, Json(request): Json<AddItem>) -> StatusCode {
+    debug!(
+        "Add item to order id: {}: product_id={} quantity={}",
+        id, request.product_id, request.quantity
+    );
     StatusCode::FORBIDDEN
 }
 
