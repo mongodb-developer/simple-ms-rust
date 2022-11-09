@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use uuid::Uuid;
 
 /// Representation of an item of an order.
@@ -45,7 +46,7 @@ pub enum OrderStoreError {
 
 /// A trait that defines the behavior of a type used to store orders.
 #[async_trait::async_trait]
-pub trait OrderStore {
+pub trait OrderStore: Send + Sync + 'static {
     /// Creates a new order associated to user `user_id`.
     ///
     /// Returns a copy of the order on success, otherwise it returns an error.
@@ -101,4 +102,19 @@ pub trait OrderStore {
     ///
     /// Returns [`ItemIndexOutOfBounds`](OrderStoreError::ItemIndexOutOfBounds) if the item index doesn't exist in the order.
     async fn delete_item(&self, order_id: Uuid, index: usize) -> Result<(), OrderStoreError>;
+}
+
+pub struct OrderStoreNewtype(pub Box<dyn OrderStore>);
+
+impl OrderStoreNewtype {
+    pub fn new(repo: impl OrderStore) -> OrderStoreNewtype {
+        OrderStoreNewtype(Box::new(repo))
+    }
+}
+
+impl Deref for OrderStoreNewtype {
+    type Target = dyn OrderStore;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
 }

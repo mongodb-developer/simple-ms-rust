@@ -15,7 +15,7 @@ impl InMemOrderStore {
     /// ```
     /// let in_mem_store = InMemOrderStore::new();
     /// ```
-    fn new() -> InMemOrderStore {
+    pub fn new() -> InMemOrderStore {
         InMemOrderStore {
             orders: RwLock::new(vec![]),
         }
