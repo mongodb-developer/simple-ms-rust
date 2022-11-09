@@ -1,11 +1,21 @@
 use super::{request::AddItem, response::Order};
-use axum::{extract::Path, http::StatusCode, Json};
+use crate::{in_mem_order_store::InMemOrderStore, order_store::OrderStore};
+use axum::{extract::Path, http::StatusCode, Extension, Json};
+use std::sync::Arc;
 use tracing::debug;
 use uuid::Uuid;
 
-pub async fn create() -> (StatusCode, Json<Option<Order>>) {
+type State = Arc<InMemOrderStore>;
+
+const USER_ID: Uuid = Uuid::from_u128(0x5afb91d8_555d_45d7_a517_ece1b6655b42);
+
+pub async fn create(Extension(state): Extension<State>) -> (StatusCode, Json<Option<Order>>) {
     debug!("Creating order");
-    (StatusCode::FORBIDDEN, Json(None))
+    if let Ok(order) = state.create_order(USER_ID).await {
+        (StatusCode::OK, Json(Some(Order::from(order))))
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(None))
+    }
 }
 
 pub async fn list() -> (StatusCode, Json<Option<Vec<Order>>>) {
