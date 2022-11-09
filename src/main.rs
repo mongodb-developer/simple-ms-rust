@@ -13,6 +13,7 @@ use axum::{
 };
 use dotenv::dotenv;
 use in_mem_order_store::InMemOrderStore;
+use order_store::OrderStoreNewtype;
 use std::{env, sync::Arc, time::Duration};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
@@ -30,7 +31,7 @@ async fn main() {
         .parse()
         .expect("Define SERVER=host:port in your .env");
     let repo = InMemOrderStore::new();
-    let state = Arc::new(repo);
+    let state = Arc::new(OrderStoreNewtype(Box::new(repo)));
     let orders_routes = Router::new()
         .route("/", get(orders::list).post(orders::create))
         .route("/:id", get(orders::get))
