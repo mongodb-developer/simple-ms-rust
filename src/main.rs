@@ -31,7 +31,7 @@ async fn main() {
         .parse()
         .expect("Define SERVER=host:port in your .env");
     let repo = InMemOrderStore::new();
-    let state = Arc::new(OrderStoreNewtype(Box::new(repo)));
+    let state = Arc::new(OrderStoreNewtype::new(repo));
     let orders_routes = Router::new()
         .route("/", get(orders::list).post(orders::create))
         .route("/:id", get(orders::get))
