@@ -14,14 +14,15 @@ use axum::{
 };
 use dotenv::dotenv;
 use in_mem_order_store::InMemOrderStore;
+use mongodb_order_store::MongodbOrderStore;
 use order_store::OrderStoreNewtype;
-use std::{env, sync::Arc, time::Duration};
+use std::{env, error::Error, sync::Arc, time::Duration};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     // Init Logging
     tracing_subscriber::fmt::init();
 
@@ -31,7 +32,10 @@ async fn main() {
     let server_addr = server_addr
         .parse()
         .expect("Define SERVER=host:port in your .env");
-    let repo = InMemOrderStore::new();
+    let mongodb_uri = env::var("MONGODB_URI").expect("Define MONGODB_URI=uri in your .env");
+
+    //    let repo = InMemOrderStore::new();
+    let repo = MongodbOrderStore::new(&mongodb_uri).await?;
     let state = Arc::new(OrderStoreNewtype::new(repo));
     let orders_routes = Router::new()
         .route("/", get(orders::list).post(orders::create))
@@ -58,6 +62,8 @@ async fn main() {
         .with_graceful_shutdown(signal_shutdown())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 async fn signal_shutdown() {

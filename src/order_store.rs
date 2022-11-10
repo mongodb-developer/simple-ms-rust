@@ -1,8 +1,13 @@
-use std::ops::Deref;
+use serde::{Deserialize, Serialize};
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+    ops::Deref,
+};
 use uuid::Uuid;
 
 /// Representation of an item of an order.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Item {
     /// Id of the product.
     pub product_id: Uuid,
@@ -11,7 +16,7 @@ pub struct Item {
 }
 
 /// Representation of an order in the system.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Order {
     /// An order is identified by its id.
     pub id: Uuid,
@@ -43,6 +48,24 @@ pub enum OrderStoreError {
     /// Provided item index is out of bounds for the provided order.
     ItemIndexOutOfBounds(usize),
 }
+
+impl Display for OrderStoreError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            OrderStoreError::StoreUnavailable => {
+                write!(f, "StoreUnavailable")
+            }
+            OrderStoreError::OrderNotFound(id) => {
+                write!(f, "OrderNotFound: {}", id)
+            }
+            OrderStoreError::ItemIndexOutOfBounds(index) => {
+                write!(f, "ItemIndexOutOfBounds: {}", index)
+            }
+        }
+    }
+}
+
+impl Error for OrderStoreError {}
 
 /// A trait that defines the behavior of a type used to store orders.
 #[async_trait::async_trait]
