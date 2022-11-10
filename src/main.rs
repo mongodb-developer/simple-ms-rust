@@ -1,5 +1,6 @@
 mod api;
 mod in_mem_order_store;
+mod mongodb_order_store;
 mod order_store;
 
 use api::{health, orders};
