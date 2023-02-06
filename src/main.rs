@@ -1,16 +1,22 @@
 mod in_mem_order_store;
 mod order_store;
-
 use axum::{
     http::{StatusCode, Uri},
     response::IntoResponse,
     routing::get,
     Router, Server,
 };
+use dotenv::dotenv;
+use std::env;
 
 #[tokio::main]
 async fn main() {
-    let server_addr = ([127, 0, 0, 1], 8080).into();
+    // Load environment configuration from .env
+    dotenv().expect("Set your configuration in a .env file");
+    let server_addr = env::var("SERVER").expect("Define SERVER=host:port in your .env");
+    let server_addr = server_addr
+        .parse()
+        .expect("Define SERVER=host:port in your .env");
     let app = Router::new()
         .route("/", get(hello))
         .fallback(fallback_handler);
