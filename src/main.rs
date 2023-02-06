@@ -3,9 +3,10 @@ mod order_store;
 
 use axum::{
     error_handling::HandleErrorLayer,
+    extract::Path,
     http::{StatusCode, Uri},
     response::IntoResponse,
-    routing::get,
+    routing::{delete, get, post},
     Router, Server,
 };
 use dotenv::dotenv;
@@ -13,6 +14,7 @@ use std::{env, time::Duration};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error, info};
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
@@ -26,8 +28,11 @@ async fn main() {
         .parse()
         .expect("Define SERVER=host:port in your .env");
     let app = Router::new()
-        .route("/", get(hello))
         .route("/health", get(health))
+        .route("/orders", get(list_orders).post(create_order))
+        .route("/orders/:id", get(get_order))
+        .route("/orders/:id/items", post(add_item_to_order))
+        .route("/orders/:id/items/:index", delete(delete_item_from_order))
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -46,14 +51,33 @@ async fn main() {
         .unwrap();
 }
 
-async fn hello() -> &'static str {
-    debug!("Static reply");
-    // tokio::time::sleep(Duration::from_secs(6)).await;
-    "SuperMicroService"
-}
-
 async fn health() -> StatusCode {
     StatusCode::OK
+}
+
+async fn create_order() -> StatusCode {
+    debug!("Creating order");
+    StatusCode::FORBIDDEN
+}
+
+async fn list_orders() -> StatusCode {
+    debug!("Listing orders");
+    StatusCode::FORBIDDEN
+}
+
+async fn get_order(Path(id): Path<Uuid>) -> StatusCode {
+    debug!("Get order id: {id}");
+    StatusCode::FORBIDDEN
+}
+
+async fn add_item_to_order(Path(id): Path<Uuid>) -> StatusCode {
+    debug!("Add item to order id: {id}");
+    StatusCode::FORBIDDEN
+}
+
+async fn delete_item_from_order(Path((id, index)): Path<(Uuid, usize)>) -> StatusCode {
+    debug!("Delete item {index} from order id: {id}");
+    StatusCode::FORBIDDEN
 }
 
 async fn signal_shutdown() {
