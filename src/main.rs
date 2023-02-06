@@ -8,15 +8,15 @@ use axum::{
     Router, Server,
 };
 use dotenv::dotenv;
-use log::{debug, error, info};
 use std::env;
+use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() {
     // Load environment configuration from .env
     dotenv().expect("Set your configuration in a .env file");
-    // Init Logging
-    env_logger::init();
+    // Init Tracing
+    tracing_subscriber::fmt::init();
 
     let server_addr = env::var("SERVER").expect("Define SERVER=host:port in your .env");
     let server_addr = server_addr
@@ -45,6 +45,7 @@ async fn signal_shutdown() {
         .expect("expect tokio signal ctrl-c");
 }
 
+#[tracing::instrument]
 async fn fallback_handler(uri: Uri) -> impl IntoResponse {
     error!("No route for {}", uri);
     (StatusCode::NOT_FOUND, format!("No route for {}", uri))
