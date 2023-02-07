@@ -1,18 +1,20 @@
+mod api;
 mod in_mem_order_store;
 mod order_store;
 
+use api::{health, orders};
 use axum::{
     error_handling::HandleErrorLayer,
     http::{StatusCode, Uri},
     response::IntoResponse,
-    routing::get,
+    routing::{delete, get, post},
     Router, Server,
 };
 use dotenv::dotenv;
 use std::{env, time::Duration};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
@@ -25,8 +27,14 @@ async fn main() {
     let server_addr = server_addr
         .parse()
         .expect("Define SERVER=host:port in your .env");
+    let orders_routes = Router::new()
+        .route("/", get(orders::list).post(orders::create))
+        .route("/:id", get(orders::get))
+        .route("/:id/items", post(orders::add_item))
+        .route("/:id/items/:index", delete(orders::delete_item));
     let app = Router::new()
-        .route("/", get(hello))
+        .route("/health", get(health::get))
+        .nest("/orders", orders_routes)
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -43,12 +51,6 @@ async fn main() {
         .with_graceful_shutdown(signal_shutdown())
         .await
         .unwrap();
-}
-
-async fn hello() -> &'static str {
-    debug!("Static reply");
-    tokio::time::sleep(Duration::from_secs(6)).await;
-    "SuperMicroService"
 }
 
 async fn signal_shutdown() {
