@@ -11,10 +11,12 @@ use axum::{
     Router, Server,
 };
 use dotenv::dotenv;
-use std::{env, time::Duration};
+use std::{env, sync::Arc, time::Duration};
 use tower::{timeout::TimeoutLayer, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
+
+use crate::in_mem_order_store::InMemOrderStore;
 
 #[tokio::main]
 async fn main() {
@@ -27,11 +29,14 @@ async fn main() {
     let server_addr = server_addr
         .parse()
         .expect("Define SERVER=host:port in your .env");
+    let repo = InMemOrderStore::new();
+    let state = Arc::new(repo);
     let orders_routes = Router::new()
         .route("/", get(orders::list).post(orders::create))
         .route("/:id", get(orders::get))
         .route("/:id/items", post(orders::add_item))
-        .route("/:id/items/:index", delete(orders::delete_item));
+        .route("/:id/items/:index", delete(orders::delete_item))
+        .with_state(state);
     let app = Router::new()
         .route("/health", get(health::get))
         .nest("/orders", orders_routes)
