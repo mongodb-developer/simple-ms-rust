@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fmt::{Display, Formatter},
@@ -5,7 +6,7 @@ use std::{
 use uuid::Uuid;
 
 /// Representation of an item of an order.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Item {
     /// Id of the product.
     pub product_id: Uuid,
@@ -14,9 +15,10 @@ pub struct Item {
 }
 
 /// Representation of an order in the system.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Order {
     /// An order is identified by its id.
+    #[serde(rename = "_id")]
     pub id: Uuid,
     /// Each order belongs to a user.
     pub user_id: Uuid,
