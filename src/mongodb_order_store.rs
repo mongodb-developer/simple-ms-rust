@@ -90,11 +90,43 @@ impl OrderStore for MongodbOrderStore {
 
     async fn add_item(
         &self,
-        _order_id: Uuid,
-        _product_id: Uuid,
-        _quantity: i32,
+        order_id: Uuid,
+        product_id: Uuid,
+        quantity: i32,
     ) -> Result<(), OrderStoreError> {
-        unimplemented!()
+        let db = self.client.database("simple-ms");
+        let orders: Collection<Order> = db.collection("orders");
+        let update_result = orders
+            .update_one(
+                doc! {"_id": Binary {
+                    subtype: BinarySubtype::Generic,
+                    bytes: order_id.into_bytes().to_vec()
+                }
+                },
+                doc! {"$push": {
+                        "items": {
+                "product_id": Binary {
+                    subtype: BinarySubtype::Generic,
+                    bytes: product_id.into_bytes().to_vec()
+                },
+                "quantity": quantity,
+                        }
+                    } },
+                None,
+            )
+            .await;
+        match update_result {
+            Err(_) => Err(OrderStoreError::StoreUnavailable),
+            Ok(result) => {
+                if result.modified_count == 1 {
+                    Ok(())
+                } else if result.matched_count == 0 {
+                    Err(OrderStoreError::OrderNotFound(order_id))
+                } else {
+                    Err(OrderStoreError::StoreUnavailable)
+                }
+            }
+        }
     }
 
     async fn delete_item(&self, _order_id: Uuid, _index: usize) -> Result<(), OrderStoreError> {

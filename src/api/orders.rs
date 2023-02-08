@@ -50,12 +50,23 @@ pub async fn get(
     }
 }
 
-pub async fn add_item(Path(id): Path<Uuid>, Json(request): Json<AddItem>) -> StatusCode {
+pub async fn add_item(
+    State(state): State<DataState>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<AddItem>,
+) -> StatusCode {
     debug!(
         "Add item to order id: {}: product_id={} quantity={}",
         id, request.product_id, request.quantity
     );
-    StatusCode::FORBIDDEN
+    match state
+        .add_item(id, request.product_id, request.quantity)
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT,
+        Err(OrderStoreError::OrderNotFound(_)) => StatusCode::NOT_FOUND,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }
 
 pub async fn delete_item(Path((id, index)): Path<(Uuid, usize)>) -> StatusCode {
