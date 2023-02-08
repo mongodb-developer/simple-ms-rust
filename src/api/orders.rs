@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tracing::debug;
 use uuid::Uuid;
 
-use crate::order_store::OrderStore;
+use crate::order_store::{OrderStore, OrderStoreError};
 
 use super::{request::AddItem, response::Order};
 
@@ -30,9 +30,17 @@ pub async fn list() -> (StatusCode, Json<Option<Vec<Order>>>) {
     (StatusCode::FORBIDDEN, Json(None))
 }
 
-pub async fn get(Path(id): Path<Uuid>) -> (StatusCode, Json<Option<Order>>) {
+pub async fn get(
+    State(state): State<DataState>,
+    Path(id): Path<Uuid>,
+) -> (StatusCode, Json<Option<Order>>) {
     debug!("Get order id: {id}");
-    (StatusCode::FORBIDDEN, Json(None))
+
+    match state.get_order(id).await {
+        Ok(order) => (StatusCode::OK, Json(Some(order.into()))),
+        Err(OrderStoreError::OrderNotFound(_)) => (StatusCode::NOT_FOUND, Json(None)),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
+    }
 }
 
 pub async fn add_item(Path(id): Path<Uuid>, Json(request): Json<AddItem>) -> StatusCode {

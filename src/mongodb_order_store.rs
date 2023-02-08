@@ -1,4 +1,5 @@
 use mongodb::{
+    bson::{doc, spec::BinarySubtype, Binary},
     options::{ClientOptions, ResolverConfig},
     Client, Collection,
 };
@@ -44,8 +45,24 @@ impl OrderStore for MongodbOrderStore {
             .map_err(|_| OrderStoreError::StoreUnavailable)
     }
 
-    async fn get_order(&self, _order_id: Uuid) -> Result<Order, OrderStoreError> {
-        unimplemented!()
+    async fn get_order(&self, order_id: Uuid) -> Result<Order, OrderStoreError> {
+        let db = self.client.database("simple-ms");
+        let orders: Collection<Order> = db.collection("orders");
+        let order: Result<Option<Order>, mongodb::error::Error> = orders
+            .find_one(
+                doc! {"_id": Binary {
+                    subtype: BinarySubtype::Generic,
+                    bytes: order_id.into_bytes().to_vec()
+                }
+                },
+                None,
+            )
+            .await;
+        match order {
+            Err(_) => Err(OrderStoreError::StoreUnavailable),
+            Ok(None) => Err(OrderStoreError::OrderNotFound(order_id)),
+            Ok(Some(order)) => Ok(order),
+        }
     }
 
     async fn list_orders(&self, _user_id: Uuid) -> Result<Vec<Order>, OrderStoreError> {
