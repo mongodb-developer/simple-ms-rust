@@ -25,9 +25,16 @@ pub async fn create(State(state): State<DataState>) -> (StatusCode, Json<Option<
     }
 }
 
-pub async fn list() -> (StatusCode, Json<Option<Vec<Order>>>) {
+pub async fn list(State(state): State<DataState>) -> (StatusCode, Json<Option<Vec<Order>>>) {
     debug!("Listing orders");
-    (StatusCode::FORBIDDEN, Json(None))
+    if let Ok(orders) = state.list_orders(USER_ID).await {
+        (
+            StatusCode::OK,
+            Json(Some(orders.into_iter().map(|o| o.into()).collect())),
+        )
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(None))
+    }
 }
 
 pub async fn get(

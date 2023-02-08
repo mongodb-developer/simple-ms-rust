@@ -1,7 +1,8 @@
+use futures_util::TryStreamExt;
 use mongodb::{
     bson::{doc, spec::BinarySubtype, Binary},
     options::{ClientOptions, ResolverConfig},
-    Client, Collection,
+    Client, Collection, Cursor,
 };
 use uuid::Uuid;
 
@@ -65,8 +66,26 @@ impl OrderStore for MongodbOrderStore {
         }
     }
 
-    async fn list_orders(&self, _user_id: Uuid) -> Result<Vec<Order>, OrderStoreError> {
-        unimplemented!()
+    async fn list_orders(&self, user_id: Uuid) -> Result<Vec<Order>, OrderStoreError> {
+        let db = self.client.database("simple-ms");
+        let orders: Collection<Order> = db.collection("orders");
+        let find_result: Result<Cursor<Order>, mongodb::error::Error> = orders
+            .find(
+                doc! {"user_id": Binary {
+                    subtype: BinarySubtype::Generic,
+                    bytes: user_id.into_bytes().to_vec()
+                }
+                },
+                None,
+            )
+            .await;
+        match find_result {
+            Err(_) => Err(OrderStoreError::StoreUnavailable),
+            Ok(cursor) => {
+                let orders = cursor.try_collect().await.unwrap_or_else(|_| vec![]);
+                Ok(orders)
+            }
+        }
     }
 
     async fn add_item(
