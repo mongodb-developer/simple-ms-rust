@@ -69,7 +69,14 @@ pub async fn add_item(
     }
 }
 
-pub async fn delete_item(Path((id, index)): Path<(Uuid, usize)>) -> StatusCode {
+pub async fn delete_item(
+    State(state): State<DataState>,
+    Path((id, index)): Path<(Uuid, usize)>,
+) -> StatusCode {
     debug!("Delete item {index} from order id: {id}");
-    StatusCode::FORBIDDEN
+    match state.delete_item(id, index).await {
+        Ok(()) => StatusCode::NO_CONTENT,
+        Err(OrderStoreError::OrderNotFound(_)) => StatusCode::NOT_FOUND,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }
